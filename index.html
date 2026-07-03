@@ -1,0 +1,905 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sound Challenge · Sound Adventure Bonus Round</title>
+<style>
+  :root{
+    --cream:#F7EAD9;
+    --blush:#F4D3CB;
+    --pink:#F3A7B2;
+    --yellowgreen:#D7DE86;
+    --green:#92C355;
+    --darkgreen:#2E8B4C;
+    --gold:#C3922E;
+    --ink:#4A3527;
+    --ink-soft:rgba(74,53,39,.7);
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    font-family:"PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    overflow:hidden;
+  }
+  #app{
+    height:100vh; width:100vw;
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+    position:relative;
+  }
+  .screen{
+    width:100%; max-width:900px; flex:1;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:24px; text-align:center;
+  }
+  [hidden]{display:none !important;}
+
+  h1{
+    font-size:clamp(26px,4vw,42px);
+    margin:0 0 6px;
+  }
+  .subtitle{
+    font-size:clamp(14px,2vw,18px);
+    color:var(--ink-soft);
+    margin-bottom:18px;
+  }
+
+  .mode-row{
+    display:flex; gap:10px; justify-content:center; margin-bottom:10px;
+  }
+  .mode-btn{
+    background:rgba(255,255,255,.5); color:var(--ink);
+    border:2px solid rgba(74,53,39,.25); box-shadow:none;
+    font-size:15px; padding:10px 22px;
+  }
+  .mode-btn.active{
+    background:var(--darkgreen);
+    color:#fff; border-color:transparent;
+  }
+  .mode-desc{
+    font-size:13px; color:var(--ink-soft); margin-bottom:16px;
+  }
+
+  .card{
+    background:rgba(255,255,255,.6);
+    border:1px solid rgba(74,53,39,.15);
+    border-radius:22px;
+    padding:26px 30px;
+    box-shadow:0 10px 30px rgba(74,53,39,.12);
+    width:100%;
+    backdrop-filter:blur(2px);
+  }
+
+  .settings{
+    display:grid; grid-template-columns:1fr 1fr; gap:16px;
+    text-align:left; margin:18px 0;
+  }
+  .settings label{
+    font-size:14px; display:flex; flex-direction:column; gap:6px;
+  }
+  .settings select, .settings input[type=number]{
+    padding:8px 10px; border-radius:10px; border:1px solid rgba(74,53,39,.2);
+    font-size:15px; font-family:inherit; color:var(--ink); background:#fff;
+  }
+
+  button{
+    font-family:inherit;
+    cursor:pointer;
+    border:none;
+    border-radius:14px;
+    padding:14px 30px;
+    font-size:18px;
+    font-weight:700;
+    color:#fff;
+    background:var(--darkgreen);
+    box-shadow:0 6px 0 rgba(46,139,76,.35);
+    transition:transform .06s;
+  }
+  button:active{ transform:translateY(4px); box-shadow:0 2px 0 rgba(46,139,76,.35); }
+  button.secondary{
+    background:rgba(195,146,46,.15);
+    border:1px solid rgba(195,146,46,.5);
+    color:var(--ink);
+    box-shadow:none;
+    font-size:14px;
+    padding:10px 18px;
+  }
+  button.small{
+    font-size:13px; padding:8px 16px; box-shadow:none;
+    background:rgba(195,146,46,.15); border:1px solid rgba(195,146,46,.5); color:var(--ink);
+  }
+  button:disabled{ opacity:.5; cursor:not-allowed; }
+
+  #errorBox{
+    color:#8a2e2e; background:rgba(243,167,178,.35);
+    border:1px solid rgba(243,167,178,.8);
+    padding:10px 16px; border-radius:12px; margin-top:14px; font-size:14px;
+  }
+
+  /* ---- Game screen ---- */
+  .topbar{
+    display:flex; justify-content:space-between; align-items:center;
+    width:100%; max-width:900px; padding:14px 20px 0;
+    font-size:14px; color:var(--ink-soft);
+  }
+  .round-pill{
+    background:rgba(255,255,255,.6); padding:6px 14px; border-radius:999px;
+    border:1px solid rgba(74,53,39,.15);
+  }
+  .target-label{
+    font-size:clamp(20px,3.2vw,30px);
+    font-weight:800;
+    margin:6px 0 2px;
+    display:flex; align-items:center; justify-content:center; gap:10px;
+  }
+  .target-tri{
+    display:inline-block; width:0; height:0;
+    border-left:12px solid transparent; border-right:12px solid transparent;
+    border-bottom:20px solid var(--gold);
+  }
+  .target-sub{
+    font-size:14px; color:var(--ink-soft); margin-bottom:18px;
+  }
+
+  .meter-wrap{
+    position:relative;
+    width:min(90vw,520px);
+    height:56px;
+    background:rgba(74,53,39,.12);
+    border-radius:999px;
+    border:2px solid rgba(74,53,39,.25);
+    overflow:hidden;
+    margin-bottom:10px;
+  }
+  .meter-target{
+    position:absolute; top:0; bottom:0;
+    background:rgba(46,139,76,.3);
+    border-left:2px dashed rgba(74,53,39,.6);
+    border-right:2px dashed rgba(74,53,39,.6);
+  }
+  .meter-fill{
+    position:absolute; top:0; bottom:0; left:0;
+    background:var(--green);
+    width:0%;
+    transition:width .06s linear, background-color .2s;
+  }
+  .meter-needle{
+    position:absolute; top:-4px; bottom:-4px; width:4px;
+    background:var(--ink); left:0%;
+    box-shadow:0 0 6px rgba(74,53,39,.6);
+    transition:left .06s linear;
+  }
+  .meter-center-tick{
+    position:absolute; top:-6px; bottom:-6px; width:2px; left:50%;
+    background:rgba(74,53,39,.55);
+    display:none;
+  }
+  .level-readout{
+    font-size:15px; color:var(--ink-soft); margin-bottom:18px;
+  }
+
+  .blob{
+    width:140px; height:140px; border-radius:50%;
+    background:var(--blush);
+    margin:8px auto 22px;
+    transform:scale(0.6);
+    transition:transform .07s ease-out, background-color .2s;
+    box-shadow:0 0 40px rgba(195,146,46,.35);
+  }
+
+  .hold-wrap{
+    width:min(90vw,420px); margin:0 auto 20px;
+  }
+  .hold-label{ font-size:13px; color:var(--ink-soft); margin-bottom:6px; }
+  .hold-bar{
+    height:16px; border-radius:999px; background:rgba(74,53,39,.12);
+    border:1px solid rgba(74,53,39,.25); overflow:hidden;
+  }
+  .hold-fill{
+    height:100%; width:0%;
+    background:var(--gold);
+    transition:width .08s linear;
+  }
+
+  .controls-row{
+    display:flex; gap:10px; margin-top:8px;
+  }
+
+  /* ---- overlays ---- */
+  .overlay{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:14px;
+    background:rgba(247,234,217,.85);
+    backdrop-filter:blur(2px);
+    z-index:20;
+  }
+  .overlay h2{
+    font-size:clamp(30px,5vw,54px); margin:0; color:var(--ink);
+  }
+
+  .confetti{
+    position:absolute; top:-20px; width:10px; height:14px;
+    opacity:.9; border-radius:2px;
+    animation:fall linear forwards;
+  }
+  @keyframes fall{
+    to{ transform:translateY(110vh) rotate(360deg); opacity:.3; }
+  }
+
+  .eq{
+    display:flex; align-items:flex-end; gap:5px; height:34px; margin:14px 0;
+  }
+  .eq span{
+    width:6px; background:var(--green); border-radius:3px;
+    height:6px; transition:height .08s;
+  }
+
+  .hint{
+    font-size:13px; color:var(--ink-soft); margin-top:6px;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- START SCREEN -->
+  <section id="startScreen" class="screen">
+    <h1>Sound Challenge</h1>
+    <div class="subtitle">Sound Adventure Bonus Round</div>
+
+    <div class="card">
+      <p style="margin-top:0">Choose how you'll play, then work together to hold the target zone on screen!</p>
+      <div class="mode-row">
+        <button type="button" class="mode-btn active" id="modeVolumeBtn">Volume Mode</button>
+        <button type="button" class="mode-btn" id="modePitchBtn">Tuner Mode</button>
+      </div>
+      <div class="mode-desc" id="modeDesc">Control how LOUD or QUIET your voices are.</div>
+      <div class="settings">
+        <label>Rounds
+          <select id="optRounds">
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5" selected>5</option>
+            <option value="6">6</option>
+          </select>
+        </label>
+        <label>Difficulty
+          <select id="optDifficulty">
+            <option value="easy">Easy (wide zone)</option>
+            <option value="normal" selected>Normal</option>
+            <option value="hard">Hard (narrow zone)</option>
+          </select>
+        </label>
+        <label>Hold Time (seconds)
+          <input id="optHold" type="number" min="1" max="10" value="3" />
+        </label>
+        <label>Next Round Delay (seconds)
+          <input id="optDelay" type="number" min="1" max="8" value="2" />
+        </label>
+      </div>
+      <button id="startBtn">Start Game</button>
+      <div class="hint">Your browser will ask for microphone access. Please click Allow.</div>
+      <div id="errorBox" hidden></div>
+    </div>
+  </section>
+
+  <!-- CALIBRATE SCREEN -->
+  <section id="calibrateScreen" class="screen" hidden>
+    <h1 id="calTitle">Calibrating Microphone...</h1>
+    <div class="subtitle" id="calSubtitle">Please stay quiet for a few seconds so the computer can learn the room's noise level</div>
+    <div class="eq" id="calEq">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <div id="calCountdown" style="font-size:48px;font-weight:800;">3</div>
+  </section>
+
+  <!-- GAME SCREEN -->
+  <section id="gameScreen" class="screen" hidden style="position:relative;">
+    <div class="topbar">
+      <span class="round-pill" id="roundPill">Round 1 / 5</span>
+      <button class="small" id="recalibrateBtn">Recalibrate</button>
+    </div>
+
+    <div class="target-label" id="targetLabel"><span class="target-tri"></span>Whisper</div>
+    <div class="target-sub" id="targetSub">Target range: 10 - 30</div>
+
+    <div class="blob" id="blob"></div>
+
+    <div class="meter-wrap">
+      <div class="meter-target" id="meterTarget"></div>
+      <div class="meter-fill" id="meterFill"></div>
+      <div class="meter-center-tick" id="meterCenterTick"></div>
+      <div class="meter-needle" id="meterNeedle"></div>
+    </div>
+    <div class="level-readout" id="levelReadout">Current volume: 0</div>
+
+    <div class="hold-wrap">
+      <div class="hold-label" id="holdLabel">Hold time: 0.0 / 3.0 sec</div>
+      <div class="hold-bar"><div class="hold-fill" id="holdFill"></div></div>
+    </div>
+
+    <div class="controls-row">
+      <button class="secondary" id="playNoteBtn" style="display:none">Play Note</button>
+      <button class="secondary" id="skipBtn">Skip Round</button>
+      <button class="secondary" id="endBtn">End Game</button>
+    </div>
+
+    <div id="roundCompleteOverlay" class="overlay" hidden>
+      <h2>You Did It!</h2>
+      <div id="nextRoundHint">Get ready for the next round...</div>
+      <button class="secondary" id="nextNowBtn">Next Round</button>
+    </div>
+  </section>
+
+  <!-- FINISH SCREEN -->
+  <section id="finishScreen" class="screen" hidden>
+    <h1>Challenge Complete!</h1>
+    <div class="subtitle">Great teamwork controlling your voices!</div>
+    <button id="restartBtn">Play Again</button>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- DOM ----------
+  const startScreen = document.getElementById('startScreen');
+  const calibrateScreen = document.getElementById('calibrateScreen');
+  const gameScreen = document.getElementById('gameScreen');
+  const finishScreen = document.getElementById('finishScreen');
+
+  const startBtn = document.getElementById('startBtn');
+  const errorBox = document.getElementById('errorBox');
+  const calTitle = document.getElementById('calTitle');
+  const calSubtitle = document.getElementById('calSubtitle');
+  const calCountdown = document.getElementById('calCountdown');
+  const calEq = document.getElementById('calEq').querySelectorAll('span');
+
+  const modeVolumeBtn = document.getElementById('modeVolumeBtn');
+  const modePitchBtn = document.getElementById('modePitchBtn');
+  const modeDesc = document.getElementById('modeDesc');
+
+  const roundPill = document.getElementById('roundPill');
+  const targetLabel = document.getElementById('targetLabel');
+  const targetSub = document.getElementById('targetSub');
+  const blob = document.getElementById('blob');
+  const meterTarget = document.getElementById('meterTarget');
+  const meterFill = document.getElementById('meterFill');
+  const meterNeedle = document.getElementById('meterNeedle');
+  const meterCenterTick = document.getElementById('meterCenterTick');
+  const levelReadout = document.getElementById('levelReadout');
+  const holdLabel = document.getElementById('holdLabel');
+  const holdFill = document.getElementById('holdFill');
+  const playNoteBtn = document.getElementById('playNoteBtn');
+  const skipBtn = document.getElementById('skipBtn');
+  const endBtn = document.getElementById('endBtn');
+  const recalibrateBtn = document.getElementById('recalibrateBtn');
+  const roundCompleteOverlay = document.getElementById('roundCompleteOverlay');
+  const nextNowBtn = document.getElementById('nextNowBtn');
+  const restartBtn = document.getElementById('restartBtn');
+
+  const optRounds = document.getElementById('optRounds');
+  const optDifficulty = document.getElementById('optDifficulty');
+  const optHold = document.getElementById('optHold');
+  const optDelay = document.getElementById('optDelay');
+
+  // ---------- audio state ----------
+  let audioCtx, analyser, floatBuf, micStream, rafId;
+  let baseline = 0; // ambient noise floor on 0-100 raw scale
+  let smoothedLevel = 0;
+  let lastPitchLevel = 0;
+  let lastPitchFreq = null;
+
+  // ---------- mode state ----------
+  let MODE = 'volume'; // 'volume' | 'pitch'
+  const MODE_DESCRIPTIONS = {
+    volume: 'Control how LOUD or QUIET your voices are.',
+    pitch: 'Sing to match the target note, like tuning an instrument. The needle centers when you are in tune!',
+  };
+
+  // ---------- game state ----------
+  const VOLUME_ROUND_DEFS = [
+    { color:'#F4D3CB', label:'Whisper', center:12 },
+    { color:'#F7EAD9', label:'Soft Voice', center:26 },
+    { color:'#D7DE86', label:'Talking', center:45 },
+    { color:'#92C355', label:'Singing', center:60 },
+    { color:'#C3922E', label:'Cheering', center:78 },
+    { color:'#2E8B4C', label:'Shouting', center:92 },
+  ];
+  // musical notes to sing/hum, low to high (frequencies in Hz)
+  const TUNER_ROUND_DEFS = [
+    { color:'#F4D3CB', label:'C4', freq:261.63 },
+    { color:'#F7EAD9', label:'D4', freq:293.66 },
+    { color:'#D7DE86', label:'E4', freq:329.63 },
+    { color:'#92C355', label:'F4', freq:349.23 },
+    { color:'#C3922E', label:'G4', freq:392.00 },
+    { color:'#2E8B4C', label:'A4', freq:440.00 },
+  ];
+  const ROUND_DEFS_BY_MODE = { volume: VOLUME_ROUND_DEFS, pitch: TUNER_ROUND_DEFS };
+  const DIFFICULTY_HALF_WIDTH = { easy:18, normal:12, hard:7 };
+  const PITCH_MIN_FREQ = 100; // search bounds for the pitch detector, not the note range
+  const PITCH_MAX_FREQ = 1000;
+
+  // color stops used to tint the volume blob as the level rises
+  const BLOB_STOPS = [
+    { at:0, color:[244,211,203] },   // blush
+    { at:50, color:[195,146,46] },   // gold
+    { at:100, color:[46,139,76] },   // dark green
+  ];
+
+  let rounds = [];
+  let roundIndex = 0;
+  let holdDuration = 3;
+  let autoDelay = 2;
+  let heldTime = 0;
+  let lastFrameTime = 0;
+  let roundLocked = false; // true while showing "round complete" overlay
+  let gameRunning = false;
+
+  // ---------- helpers ----------
+  function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
+
+  function lerpColor(level){
+    let lo = BLOB_STOPS[0], hi = BLOB_STOPS[BLOB_STOPS.length-1];
+    for (let i=0; i<BLOB_STOPS.length-1; i++){
+      if (level >= BLOB_STOPS[i].at && level <= BLOB_STOPS[i+1].at){
+        lo = BLOB_STOPS[i]; hi = BLOB_STOPS[i+1]; break;
+      }
+    }
+    const span = hi.at - lo.at || 1;
+    const t = clamp((level - lo.at) / span, 0, 1);
+    const rgb = lo.color.map((c,i) => Math.round(c + (hi.color[i]-c)*t));
+    return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+  }
+
+  function buildRounds(){
+    const n = parseInt(optRounds.value,10);
+    const diff = optDifficulty.value;
+    const halfWidth = DIFFICULTY_HALF_WIDTH[diff];
+    const defs = ROUND_DEFS_BY_MODE[MODE].slice(0,n);
+    rounds = defs.map(d => {
+      // in tuner mode the target is always "in tune" (level 50); the note only changes what frequency that means
+      const center = MODE === 'pitch' ? 50 : d.center;
+      const min = clamp(center - halfWidth, 0, 100);
+      const max = clamp(center + halfWidth, 0, 100);
+      return { color:d.color, label:d.label, min, max, targetFreq:d.freq };
+    });
+  }
+
+  function showScreen(el){
+    [startScreen, calibrateScreen, gameScreen, finishScreen].forEach(s => s.hidden = (s !== el));
+  }
+
+  function setMode(m){
+    MODE = m;
+    modeVolumeBtn.classList.toggle('active', m === 'volume');
+    modePitchBtn.classList.toggle('active', m === 'pitch');
+    modeDesc.textContent = MODE_DESCRIPTIONS[m];
+    recalibrateBtn.textContent = m === 'volume' ? 'Recalibrate' : 'Get Ready';
+    meterCenterTick.style.display = m === 'pitch' ? 'block' : 'none';
+    playNoteBtn.style.display = m === 'pitch' ? 'inline-block' : 'none';
+  }
+
+  // ---------- mic setup ----------
+  async function initMic(){
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: {
+      echoCancellation:false, noiseSuppression:false, autoGainControl:false
+    }});
+    const source = audioCtx.createMediaStreamSource(micStream);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 2048;
+    floatBuf = new Float32Array(analyser.fftSize);
+    source.connect(analyser);
+  }
+
+  function readRawVolumeLevel(){
+    analyser.getFloatTimeDomainData(floatBuf);
+    let sumSquares = 0;
+    for (let i=0; i<floatBuf.length; i++){
+      sumSquares += floatBuf[i]*floatBuf[i];
+    }
+    const rms = Math.sqrt(sumSquares/floatBuf.length);
+    const db = 20*Math.log10(rms || 0.00001); // roughly -80..0
+    const raw = clamp(((db+50)/45)*100, 0, 100); // map -50..-5dB -> 0..100 (typical speech range)
+    return raw;
+  }
+
+  function readCalibratedLevel(){
+    const raw = readRawVolumeLevel();
+    smoothedLevel += (raw - smoothedLevel) * 0.45; // smoothing
+    const ceiling = Math.max(100 - baseline, 1);
+    const calibrated = clamp(((smoothedLevel - baseline) / ceiling) * 100, 0, 100);
+    return calibrated;
+  }
+
+  function detectPitchHz(){
+    analyser.getFloatTimeDomainData(floatBuf);
+    const SIZE = Math.min(1024, floatBuf.length);
+    let sumSquares = 0;
+    for (let i=0; i<SIZE; i++) sumSquares += floatBuf[i]*floatBuf[i];
+    const meanPower = sumSquares/SIZE;
+    const rms = Math.sqrt(meanPower);
+    if (rms < 0.003) return -1; // too quiet to detect a pitch
+
+    const sampleRate = audioCtx.sampleRate;
+    const minLag = Math.max(2, Math.floor(sampleRate/PITCH_MAX_FREQ));
+    const maxLag = Math.min(SIZE-1, Math.ceil(sampleRate/PITCH_MIN_FREQ));
+    let bestLag = -1, bestCorr = 0;
+    for (let lag=minLag; lag<=maxLag; lag++){
+      let corr = 0;
+      for (let i=0; i<SIZE-lag; i++){ corr += floatBuf[i]*floatBuf[i+lag]; }
+      corr = corr/(SIZE-lag);
+      if (corr > bestCorr){ bestCorr = corr; bestLag = lag; }
+    }
+    // normalize by signal power so quiet voices are just as detectable as loud ones
+    const confidence = bestCorr / meanPower;
+    if (bestLag <= 0 || confidence < 0.35) return -1; // not periodic enough
+    return sampleRate/bestLag;
+  }
+
+  // tuner-style: 50 = perfectly in tune with targetFreq, <50 flat, >50 sharp
+  function readPitchLevel(targetFreq){
+    const freq = detectPitchHz();
+    if (freq > 0){
+      lastPitchFreq = freq;
+      const cents = clamp(1200 * Math.log2(freq/targetFreq), -50, 50);
+      const target = clamp(50 + cents, 0, 100);
+      lastPitchLevel += (target - lastPitchLevel) * 0.45;
+    }
+    return lastPitchLevel;
+  }
+
+  function playReferenceTone(freq){
+    if (!audioCtx) return;
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.25, now + 0.05);
+    gain.gain.setValueAtTime(0.25, now + 1.1);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.4);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 1.45);
+  }
+
+  function stopMic(){
+    if (rafId) cancelAnimationFrame(rafId);
+    if (micStream) micStream.getTracks().forEach(t => t.stop());
+    if (audioCtx) audioCtx.close();
+  }
+
+  // ---------- calibration ----------
+  function runCalibration(onDone){
+    calTitle.textContent = 'Calibrating Microphone...';
+    calSubtitle.textContent = "Please stay quiet for a few seconds so the computer can learn the room's noise level";
+    showScreen(calibrateScreen);
+    const durationMs = 3000;
+    const startTime = performance.now();
+    const samples = [];
+
+    function tick(now){
+      const elapsed = now - startTime;
+      const remaining = Math.max(0, durationMs - elapsed);
+      calCountdown.textContent = (remaining/1000).toFixed(1);
+
+      const raw = readRawVolumeLevel();
+      samples.push(raw);
+      calEq.forEach((bar,i) => {
+        const h = 6 + Math.max(0, raw + (Math.random()*10-5)) * 0.25;
+        bar.style.height = clamp(h,6,34) + 'px';
+      });
+
+      if (elapsed < durationMs){
+        rafId = requestAnimationFrame(tick);
+      } else {
+        const avg = samples.reduce((a,b)=>a+b,0) / samples.length;
+        baseline = clamp(avg, 0, 90);
+        smoothedLevel = baseline;
+        onDone();
+      }
+    }
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function runPitchReady(onDone){
+    calTitle.textContent = 'Get Ready...';
+    calSubtitle.textContent = 'Try humming or singing to warm up your voice!';
+    showScreen(calibrateScreen);
+    const durationMs = 1800;
+    const startTime = performance.now();
+
+    function tick(now){
+      const elapsed = now - startTime;
+      const remaining = Math.max(0, durationMs - elapsed);
+      calCountdown.textContent = (remaining/1000).toFixed(1);
+
+      const raw = readRawVolumeLevel();
+      calEq.forEach((bar,i) => {
+        const h = 6 + Math.max(0, raw + (Math.random()*10-5)) * 0.25;
+        bar.style.height = clamp(h,6,34) + 'px';
+      });
+
+      if (elapsed < durationMs){
+        rafId = requestAnimationFrame(tick);
+      } else {
+        lastPitchLevel = 0;
+        lastPitchFreq = null;
+        onDone();
+      }
+    }
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function runReadyStep(onDone){
+    if (MODE === 'volume') runCalibration(onDone);
+    else runPitchReady(onDone);
+  }
+
+  // ---------- sound feedback ----------
+  function playChime(){
+    if (!audioCtx) return;
+    const now = audioCtx.currentTime;
+    [523.25, 659.25, 783.99].forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, now + i*0.12);
+      gain.gain.linearRampToValueAtTime(0.18, now + i*0.12 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + i*0.12 + 0.3);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(now + i*0.12);
+      osc.stop(now + i*0.12 + 0.32);
+    });
+  }
+
+  function playVictoryFanfare(){
+    if (!audioCtx) return;
+    const now = audioCtx.currentTime;
+
+    // triumphant rising notes
+    const notes = [523.25, 659.25, 783.99, 1046.50, 783.99, 1046.50];
+    notes.forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      const t0 = now + i*0.12;
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.linearRampToValueAtTime(0.22, t0 + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.35);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(t0);
+      osc.stop(t0 + 0.4);
+    });
+
+    // crowd-cheer swell made from filtered noise
+    const duration = 1.5;
+    const bufferSize = Math.floor(audioCtx.sampleRate * duration);
+    const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = noiseBuffer.getChannelData(0);
+    for (let i=0; i<bufferSize; i++){ data[i] = Math.random()*2 - 1; }
+    const noiseSource = audioCtx.createBufferSource();
+    noiseSource.buffer = noiseBuffer;
+    const bandpass = audioCtx.createBiquadFilter();
+    bandpass.type = 'bandpass';
+    bandpass.frequency.value = 1800;
+    bandpass.Q.value = 0.6;
+    const noiseGain = audioCtx.createGain();
+    const cheerStart = now + 0.1;
+    noiseGain.gain.setValueAtTime(0.0001, cheerStart);
+    noiseGain.gain.linearRampToValueAtTime(0.32, cheerStart + 0.3);
+    noiseGain.gain.linearRampToValueAtTime(0.18, cheerStart + 0.9);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, cheerStart + duration);
+    noiseSource.connect(bandpass).connect(noiseGain).connect(audioCtx.destination);
+    noiseSource.start(cheerStart);
+    noiseSource.stop(cheerStart + duration);
+  }
+
+  // ---------- confetti ----------
+  function burstConfetti(container, count=40){
+    const colors = ['#F3A7B2','#F4D3CB','#92C355','#C3922E','#2E8B4C','#D7DE86'];
+    for (let i=0; i<count; i++){
+      const c = document.createElement('div');
+      c.className = 'confetti';
+      c.style.left = Math.random()*100 + '%';
+      c.style.background = colors[i % colors.length];
+      c.style.animationDuration = (1.4 + Math.random()*1.2) + 's';
+      c.style.animationDelay = (Math.random()*0.3) + 's';
+      container.appendChild(c);
+      setTimeout(() => c.remove(), 3200);
+    }
+  }
+
+  // ---------- round lifecycle ----------
+  function loadRound(idx){
+    heldTime = 0;
+    roundLocked = false;
+    roundCompleteOverlay.hidden = true;
+    const r = rounds[idx];
+    roundPill.textContent = `Round ${idx+1} / ${rounds.length}`;
+    if (MODE === 'pitch'){
+      targetLabel.innerHTML = `<span class="target-tri" style="border-bottom-color:${r.color}"></span>Target Note: ${r.label}`;
+      targetSub.textContent = `${Math.round(r.targetFreq)} Hz · tune your voice to match!`;
+    } else {
+      targetLabel.innerHTML = `<span class="target-tri" style="border-bottom-color:${r.color}"></span>${r.label}`;
+      targetSub.textContent = `Target range: ${r.min} - ${r.max}`;
+    }
+    meterTarget.style.left = r.min + '%';
+    meterTarget.style.width = (r.max - r.min) + '%';
+    holdLabel.textContent = `Hold time: 0.0 / ${holdDuration.toFixed(1)} sec`;
+    holdFill.style.width = '0%';
+  }
+
+  function completeRound(){
+    roundLocked = true;
+    playChime();
+    roundCompleteOverlay.hidden = false;
+    burstConfetti(gameScreen);
+    const isLast = roundIndex >= rounds.length - 1;
+    document.getElementById('nextRoundHint').textContent = isLast
+      ? 'Finishing up...'
+      : `Get ready for the next round... (continuing in ${autoDelay}s)`;
+
+    setTimeout(() => {
+      if (roundLocked) advanceRound();
+    }, autoDelay*1000);
+  }
+
+  function advanceRound(){
+    roundLocked = false;
+    roundIndex++;
+    if (roundIndex >= rounds.length){
+      finishGame();
+    } else {
+      loadRound(roundIndex);
+    }
+  }
+
+  function finishGame(){
+    gameRunning = false;
+    if (rafId) cancelAnimationFrame(rafId);
+    showScreen(finishScreen);
+    playVictoryFanfare();
+    burstConfetti(finishScreen, 90);
+    setTimeout(() => burstConfetti(finishScreen, 60), 400);
+    setTimeout(() => burstConfetti(finishScreen, 40), 800);
+  }
+
+  // ---------- main loop ----------
+  function gameLoop(now){
+    if (!gameRunning) return;
+    const dt = lastFrameTime ? (now - lastFrameTime)/1000 : 0;
+    lastFrameTime = now;
+
+    const r = rounds[roundIndex];
+    const level = MODE === 'volume' ? readCalibratedLevel() : readPitchLevel(r.targetFreq);
+
+    meterFill.style.width = level + '%';
+    meterNeedle.style.left = level + '%';
+    if (MODE === 'volume'){
+      levelReadout.textContent = `Current volume: ${level.toFixed(0)}`;
+    } else if (lastPitchFreq){
+      const cents = 1200 * Math.log2(lastPitchFreq/r.targetFreq);
+      const tolerance = r.max - 50;
+      const hint = Math.abs(cents) <= tolerance ? 'In tune!' : (cents < 0 ? 'Sing higher' : 'Sing lower');
+      levelReadout.textContent = `Current pitch: ${Math.round(lastPitchFreq)} Hz (${hint})`;
+    } else {
+      levelReadout.textContent = 'Current pitch: listening...';
+    }
+
+    const scale = 0.55 + (level/100)*0.75;
+    const blobColor = lerpColor(level);
+    blob.style.transform = `scale(${scale})`;
+    blob.style.background = blobColor;
+    blob.style.boxShadow = `0 0 ${20+level*0.6}px ${blobColor}80`;
+
+    if (!roundLocked){
+      const inRange = level >= r.min && level <= r.max;
+      if (inRange){
+        heldTime = Math.min(holdDuration, heldTime + dt);
+      }
+      holdLabel.textContent = `Hold time: ${heldTime.toFixed(1)} / ${holdDuration.toFixed(1)} sec`;
+      holdFill.style.width = (heldTime/holdDuration*100) + '%';
+
+      if (heldTime >= holdDuration){
+        completeRound();
+      }
+    }
+
+    rafId = requestAnimationFrame(gameLoop);
+  }
+
+  // ---------- flow control ----------
+  async function startGame(){
+    errorBox.hidden = true;
+    startBtn.disabled = true;
+    try {
+      buildRounds();
+      holdDuration = parseFloat(optHold.value) || 3;
+      autoDelay = parseFloat(optDelay.value) || 2;
+
+      if (!audioCtx){
+        await initMic();
+      } else if (audioCtx.state === 'suspended'){
+        await audioCtx.resume();
+      }
+
+      runReadyStep(() => {
+        roundIndex = 0;
+        gameRunning = true;
+        lastFrameTime = 0;
+        startBtn.disabled = false;
+        showScreen(gameScreen);
+        loadRound(0);
+        rafId = requestAnimationFrame(gameLoop);
+      });
+    } catch (err){
+      console.error(err);
+      errorBox.hidden = false;
+      errorBox.textContent = 'Could not access the microphone. Please allow microphone access in your browser, or open this page in Chrome/Edge. If opening the file directly (file://) still does not work, run a local server (for example: python3 -m http.server) and open the page via http://localhost instead.';
+      startBtn.disabled = false;
+    }
+  }
+
+  modeVolumeBtn.addEventListener('click', () => setMode('volume'));
+  modePitchBtn.addEventListener('click', () => setMode('pitch'));
+
+  startBtn.addEventListener('click', startGame);
+
+  playNoteBtn.addEventListener('click', () => {
+    if (!gameRunning || !rounds[roundIndex]) return;
+    playReferenceTone(rounds[roundIndex].targetFreq);
+  });
+
+  skipBtn.addEventListener('click', () => {
+    if (!gameRunning) return;
+    roundLocked = false;
+    advanceRound();
+  });
+
+  endBtn.addEventListener('click', () => {
+    gameRunning = false;
+    if (rafId) cancelAnimationFrame(rafId);
+    stopMic();
+    audioCtx = null;
+    showScreen(startScreen);
+    startBtn.disabled = false;
+  });
+
+  recalibrateBtn.addEventListener('click', () => {
+    if (!gameRunning) return;
+    gameRunning = false;
+    if (rafId) cancelAnimationFrame(rafId);
+    runReadyStep(() => {
+      gameRunning = true;
+      lastFrameTime = 0;
+      showScreen(gameScreen);
+      rafId = requestAnimationFrame(gameLoop);
+    });
+  });
+
+  nextNowBtn.addEventListener('click', () => {
+    if (roundLocked) advanceRound();
+  });
+
+  restartBtn.addEventListener('click', () => {
+    startBtn.disabled = false;
+    showScreen(startScreen);
+  });
+
+  window.addEventListener('beforeunload', stopMic);
+})();
+</script>
+</body>
+</html>
