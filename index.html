@@ -140,10 +140,69 @@
   }
   button:disabled{ opacity:.5; cursor:not-allowed; transform:none !important; }
 
-  #errorBox{
+  #errorBox, #rulesErrorBox{
     color:#8a2e2e; background:rgba(243,167,178,.35);
     border:1px solid rgba(243,167,178,.8);
     padding:10px 16px; border-radius:12px; margin-top:14px; font-size:14px;
+  }
+  .rules-list{
+    text-align:left; margin:0 0 16px; padding:0;
+  }
+  .rule-item{
+    display:flex; align-items:center; gap:14px;
+    margin-bottom:14px; font-size:15px;
+  }
+  .rule-icon{
+    flex:0 0 auto; width:56px; height:56px; border-radius:16px;
+    border:3px solid var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    position:relative;
+  }
+
+  .mini-meter{
+    width:36px; height:12px; border-radius:999px;
+    background:rgba(74,53,39,.25); border:2px solid var(--ink);
+    position:relative; overflow:hidden;
+  }
+  .mini-meter-zone{
+    position:absolute; left:35%; width:30%; top:0; bottom:0;
+    background:var(--darkgreen);
+  }
+
+  .mini-eq{ display:flex; align-items:flex-end; gap:3px; height:28px; }
+  .mini-eq span{ width:5px; background:#fff; border-radius:2px; }
+  .mini-eq span:nth-child(1){ height:10px; }
+  .mini-eq span:nth-child(2){ height:22px; }
+  .mini-eq span:nth-child(3){ height:16px; }
+  .mini-eq span:nth-child(4){ height:26px; }
+
+  .mini-hold{
+    width:36px; height:12px; border-radius:999px;
+    background:rgba(255,255,255,.45); border:2px solid var(--ink);
+    overflow:hidden;
+  }
+  .mini-hold-fill{ display:block; height:100%; width:70%; background:var(--darkgreen); }
+
+  .reset-arc{
+    width:26px; height:26px; border-radius:50%;
+    border:4px solid var(--ink);
+    border-bottom-color:transparent; border-left-color:transparent;
+    position:relative;
+  }
+  .reset-arc::after{
+    content:''; position:absolute; top:-7px; right:-3px;
+    width:0; height:0;
+    border-left:6px solid transparent; border-right:6px solid transparent;
+    border-bottom:8px solid var(--ink);
+    transform:rotate(50deg);
+  }
+
+  .icon-check{ position:relative; width:26px; height:26px; }
+  .icon-check::before{
+    content:''; position:absolute; left:7px; top:1px;
+    width:7px; height:15px;
+    border-bottom:5px solid #fff; border-right:5px solid #fff;
+    transform:rotate(45deg);
   }
 
   /* ---- Game screen ---- */
@@ -151,6 +210,14 @@
     display:flex; justify-content:space-between; align-items:center;
     width:100%; max-width:900px; padding:14px 20px 0;
     font-size:14px; color:var(--ink-soft);
+  }
+  .topbar-left{
+    display:flex; align-items:center; gap:8px;
+  }
+  .timer-pill{
+    background:#fff; color:var(--ink); font-weight:700;
+    padding:6px 14px; border-radius:999px;
+    border:2px solid var(--ink);
   }
   .round-pill{
     background:var(--gold); color:#fff; font-weight:700;
@@ -266,6 +333,15 @@
     animation:popIn .45s ease-out;
   }
 
+  .start-badge{
+    background:var(--darkgreen); color:#fff;
+    border:4px solid var(--ink); border-radius:20px;
+    padding:16px 36px;
+    font-size:clamp(28px,5vw,48px); font-weight:900;
+    box-shadow:6px 6px 0 var(--ink);
+    animation:popIn .5s ease-out;
+  }
+
   .confetti{
     position:absolute; top:-20px; width:10px; height:14px;
     opacity:.9; border-radius:2px;
@@ -286,6 +362,32 @@
   .hint{
     font-size:13px; color:var(--ink-soft); margin-top:6px;
   }
+
+  .finish-time{
+    font-size:clamp(20px,3.5vw,28px); font-weight:800; color:var(--darkgreen);
+    margin:6px 0 20px;
+  }
+
+  .coachmark{
+    position:fixed; z-index:30; max-width:240px;
+    background:#fff; border:3px solid var(--ink); border-radius:14px;
+    padding:10px 14px; font-size:14px; font-weight:700; color:var(--ink);
+    box-shadow:4px 4px 0 var(--ink);
+    animation:popIn .3s ease-out;
+    pointer-events:none;
+  }
+  .coachmark::before{
+    content:''; position:absolute; left:50%; bottom:-11px; transform:translateX(-50%);
+    width:0; height:0;
+    border-left:9px solid transparent; border-right:9px solid transparent;
+    border-top:11px solid var(--ink);
+  }
+  .coachmark::after{
+    content:''; position:absolute; left:50%; bottom:-6.5px; transform:translateX(-50%);
+    width:0; height:0;
+    border-left:7px solid transparent; border-right:7px solid transparent;
+    border-top:8px solid #fff;
+  }
 </style>
 </head>
 <body>
@@ -296,6 +398,10 @@
   <div class="deco deco-4"></div>
   <div class="deco deco-tri deco-5"></div>
   <div class="deco deco-tri deco-6"></div>
+
+  <div class="coachmark" id="coachmark" hidden>
+    <div id="coachmarkText"></div>
+  </div>
 
   <!-- START SCREEN -->
   <section id="startScreen" class="screen">
@@ -338,6 +444,22 @@
     </div>
   </section>
 
+  <!-- RULES SCREEN -->
+  <section id="rulesScreen" class="screen" hidden>
+    <h1>Let's Learn by Playing!</h1>
+    <div class="card">
+      <div class="rule-item" style="margin-bottom:18px">
+        <span class="rule-icon" style="background:var(--blush)">
+          <span class="mini-meter"><span class="mini-meter-zone"></span></span>
+        </span>
+        <span>No need to read a big list of rules — we'll show you quick tips right on screen during your first warm-up round.</span>
+      </div>
+      <p class="hint" style="margin-top:0">3 quick warm-up rounds first, then the real timed challenge begins!</p>
+      <button id="beginWarmupBtn">Let's Go!</button>
+      <div id="rulesErrorBox" hidden></div>
+    </div>
+  </section>
+
   <!-- CALIBRATE SCREEN -->
   <section id="calibrateScreen" class="screen" hidden>
     <h1 id="calTitle">Calibrating Microphone...</h1>
@@ -352,7 +474,10 @@
   <!-- GAME SCREEN -->
   <section id="gameScreen" class="screen" hidden style="position:relative;">
     <div class="topbar">
-      <span class="round-pill" id="roundPill">Round 1 / 5</span>
+      <div class="topbar-left">
+        <span class="round-pill" id="roundPill">Round 1 / 5</span>
+        <span class="timer-pill" id="timerPill">0.0s</span>
+      </div>
       <button class="small" id="recalibrateBtn">Recalibrate</button>
     </div>
 
@@ -361,7 +486,7 @@
 
     <div class="blob" id="blob"></div>
 
-    <div class="meter-wrap">
+    <div class="meter-wrap" id="meterWrap">
       <div class="meter-target" id="meterTarget"></div>
       <div class="meter-fill" id="meterFill"></div>
       <div class="meter-center-tick" id="meterCenterTick"></div>
@@ -372,7 +497,7 @@
       <div class="level-caption" id="levelCaption">Current volume</div>
     </div>
 
-    <div class="hold-wrap">
+    <div class="hold-wrap" id="holdWrap">
       <div class="hold-label" id="holdLabel">Hold time: 0.0 / 3.0 sec</div>
       <div class="hold-bar"><div class="hold-fill" id="holdFill"></div></div>
     </div>
@@ -388,12 +513,18 @@
       <div id="nextRoundHint">Get ready for the next round...</div>
       <button class="secondary" id="nextNowBtn">Next Round</button>
     </div>
+
+    <div id="challengeStartOverlay" class="overlay" hidden>
+      <div class="start-badge">Challenge Start!</div>
+      <div class="subtitle">Timer starts now — good luck!</div>
+    </div>
   </section>
 
   <!-- FINISH SCREEN -->
   <section id="finishScreen" class="screen" hidden>
     <h1>Challenge Complete!</h1>
     <div class="subtitle">Great teamwork controlling your voices!</div>
+    <div class="finish-time" id="finishTime">Total time: 0.0s</div>
     <button id="restartBtn">Play Again</button>
   </section>
 
@@ -405,12 +536,15 @@
 
   // ---------- DOM ----------
   const startScreen = document.getElementById('startScreen');
+  const rulesScreen = document.getElementById('rulesScreen');
   const calibrateScreen = document.getElementById('calibrateScreen');
   const gameScreen = document.getElementById('gameScreen');
   const finishScreen = document.getElementById('finishScreen');
 
   const startBtn = document.getElementById('startBtn');
+  const beginWarmupBtn = document.getElementById('beginWarmupBtn');
   const errorBox = document.getElementById('errorBox');
+  const rulesErrorBox = document.getElementById('rulesErrorBox');
   const calTitle = document.getElementById('calTitle');
   const calSubtitle = document.getElementById('calSubtitle');
   const calCountdown = document.getElementById('calCountdown');
@@ -421,6 +555,12 @@
   const modeDesc = document.getElementById('modeDesc');
 
   const roundPill = document.getElementById('roundPill');
+  const timerPill = document.getElementById('timerPill');
+  const finishTime = document.getElementById('finishTime');
+  const meterWrap = document.getElementById('meterWrap');
+  const holdWrap = document.getElementById('holdWrap');
+  const coachmark = document.getElementById('coachmark');
+  const coachmarkText = document.getElementById('coachmarkText');
   const targetLabel = document.getElementById('targetLabel');
   const targetSub = document.getElementById('targetSub');
   const blob = document.getElementById('blob');
@@ -437,6 +577,7 @@
   const endBtn = document.getElementById('endBtn');
   const recalibrateBtn = document.getElementById('recalibrateBtn');
   const roundCompleteOverlay = document.getElementById('roundCompleteOverlay');
+  const challengeStartOverlay = document.getElementById('challengeStartOverlay');
   const nextNowBtn = document.getElementById('nextNowBtn');
   const restartBtn = document.getElementById('restartBtn');
 
@@ -452,6 +593,29 @@
   let lastPitchLevel = 0;
   let lastPitchFreq = null;
   let lastDisplayedNumber = null;
+
+  // ---------- coachmark (in-game tutorial) state ----------
+  let coachmarkTimeoutId = null;
+  let wasInRange = false;
+  const tutorialShown = { zone:false, hold:false, reset:false };
+
+  function showCoachmark(targetEl, text, autoHideMs){
+    clearTimeout(coachmarkTimeoutId);
+    const rect = targetEl.getBoundingClientRect();
+    coachmarkText.textContent = text;
+    coachmark.style.left = (rect.left + rect.width/2) + 'px';
+    coachmark.style.top = (rect.top - 14) + 'px';
+    coachmark.style.transform = 'translate(-50%, -100%)';
+    coachmark.hidden = false;
+    if (autoHideMs){
+      coachmarkTimeoutId = setTimeout(hideCoachmark, autoHideMs);
+    }
+  }
+
+  function hideCoachmark(){
+    clearTimeout(coachmarkTimeoutId);
+    coachmark.hidden = true;
+  }
 
   // ---------- mode state ----------
   let MODE = 'volume'; // 'volume' | 'pitch'
@@ -491,16 +655,31 @@
   ];
 
   let rounds = [];
+  let warmupRounds = [];
+  let phase = 'warmup'; // 'warmup' | 'challenge'
   let roundIndex = 0;
   let holdDuration = 3;
   let autoDelay = 2;
   let heldTime = 0;
   let lastFrameTime = 0;
+  let gameStartTime = 0;
   let roundLocked = false; // true while showing "round complete" overlay
   let gameRunning = false;
+  let transitioning = false; // true while showing the "Challenge Start!" banner between warm-up and the real challenge
 
   // ---------- helpers ----------
   function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
+
+  function shuffle(arr){
+    const a = arr.slice();
+    for (let i=a.length-1; i>0; i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+  }
+
+  function activeRounds(){ return phase === 'warmup' ? warmupRounds : rounds; }
 
   function lerpColor(level){
     let lo = BLOB_STOPS[0], hi = BLOB_STOPS[BLOB_STOPS.length-1];
@@ -515,22 +694,39 @@
     return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
   }
 
+  function defToRound(d, halfWidth){
+    // in tuner mode the target is always "in tune" (level 50); the note only changes what frequency that means
+    const center = MODE === 'pitch' ? 50 : d.center;
+    const min = clamp(center - halfWidth, 0, 100);
+    const max = clamp(center + halfWidth, 0, 100);
+    return { color:d.color, label:d.label, min, max, targetFreq:d.freq };
+  }
+
   function buildRounds(){
     const n = parseInt(optRounds.value,10);
     const diff = optDifficulty.value;
     const halfWidth = DIFFICULTY_HALF_WIDTH[diff];
-    const defs = ROUND_DEFS_BY_MODE[MODE].slice(0,n);
-    rounds = defs.map(d => {
-      // in tuner mode the target is always "in tune" (level 50); the note only changes what frequency that means
-      const center = MODE === 'pitch' ? 50 : d.center;
-      const min = clamp(center - halfWidth, 0, 100);
-      const max = clamp(center + halfWidth, 0, 100);
-      return { color:d.color, label:d.label, min, max, targetFreq:d.freq };
-    });
+    const allDefs = ROUND_DEFS_BY_MODE[MODE];
+    let defs;
+    if (MODE === 'volume'){
+      // always end on the quietest round so the room settles back down after the challenge;
+      // shuffle the build-up rounds so the order is different each time
+      const rampUp = shuffle(allDefs.slice(1)).slice(0, Math.max(0, n-1));
+      defs = [...rampUp, allDefs[0]];
+    } else {
+      defs = shuffle(allDefs).slice(0, n);
+    }
+    rounds = defs.map(d => defToRound(d, halfWidth));
+  }
+
+  function buildWarmupRounds(){
+    const allDefs = ROUND_DEFS_BY_MODE[MODE];
+    const halfWidth = DIFFICULTY_HALF_WIDTH.easy; // warm-up is always forgiving
+    warmupRounds = shuffle(allDefs).slice(0, 3).map(d => defToRound(d, halfWidth));
   }
 
   function showScreen(el){
-    [startScreen, calibrateScreen, gameScreen, finishScreen].forEach(s => s.hidden = (s !== el));
+    [startScreen, rulesScreen, calibrateScreen, gameScreen, finishScreen].forEach(s => s.hidden = (s !== el));
   }
 
   function setMode(m){
@@ -808,8 +1004,11 @@
     roundLocked = false;
     lastDisplayedNumber = null;
     roundCompleteOverlay.hidden = true;
-    const r = rounds[idx];
-    roundPill.textContent = `Round ${idx+1} / ${rounds.length}`;
+    const list = activeRounds();
+    const r = list[idx];
+    roundPill.textContent = phase === 'warmup'
+      ? `Warm-up ${idx+1} / ${list.length}`
+      : `Round ${idx+1} / ${list.length}`;
     if (MODE === 'pitch'){
       targetLabel.innerHTML = `<span class="target-tri" style="border-bottom-color:${r.color}"></span>Target Note: ${r.label}`;
       targetSub.textContent = `${Math.round(r.targetFreq)} Hz · tune your voice to match!`;
@@ -821,28 +1020,62 @@
     meterTarget.style.width = (r.max - r.min) + '%';
     holdLabel.textContent = `Hold time: 0.0 / ${holdDuration.toFixed(1)} sec`;
     holdFill.style.width = '0%';
+
+    wasInRange = false;
+    hideCoachmark();
+    if (phase === 'warmup' && idx === 0 && !tutorialShown.zone){
+      coachmarkTimeoutId = setTimeout(() => {
+        showCoachmark(meterWrap, "This is your target zone — use your voice to get the needle inside it!");
+        tutorialShown.zone = true;
+      }, 700);
+    }
   }
 
   function completeRound(){
     roundLocked = true;
+    hideCoachmark();
     playChime();
     roundCompleteOverlay.hidden = false;
     burstConfetti(gameScreen);
-    const isLast = roundIndex >= rounds.length - 1;
-    document.getElementById('nextRoundHint').textContent = isLast
-      ? 'Finishing up...'
-      : `Get ready for the next round... (continuing in ${autoDelay}s)`;
+    const isLast = roundIndex >= activeRounds().length - 1;
+    let hint;
+    if (phase === 'warmup'){
+      hint = isLast ? 'Warm-up complete! Get ready for the real challenge...' : `Nice! Next warm-up round... (continuing in ${autoDelay}s)`;
+    } else {
+      hint = isLast ? 'Finishing up...' : `Get ready for the next round... (continuing in ${autoDelay}s)`;
+    }
+    document.getElementById('nextRoundHint').textContent = hint;
 
     setTimeout(() => {
       if (roundLocked) advanceRound();
     }, autoDelay*1000);
   }
 
+  function startChallengePhase(){
+    transitioning = true;
+    roundCompleteOverlay.hidden = true;
+    challengeStartOverlay.hidden = false;
+    setTimeout(() => {
+      if (!gameRunning) return; // player ended the game during the transition
+      challengeStartOverlay.hidden = true;
+      phase = 'challenge';
+      buildRounds();
+      roundIndex = 0;
+      gameStartTime = performance.now();
+      transitioning = false;
+      loadRound(0);
+    }, 2000);
+  }
+
   function advanceRound(){
     roundLocked = false;
     roundIndex++;
-    if (roundIndex >= rounds.length){
-      finishGame();
+    if (roundIndex >= activeRounds().length){
+      if (phase === 'warmup'){
+        startChallengePhase();
+      } else {
+        finishGame();
+      }
     } else {
       loadRound(roundIndex);
     }
@@ -851,6 +1084,8 @@
   function finishGame(){
     gameRunning = false;
     if (rafId) cancelAnimationFrame(rafId);
+    const totalSeconds = (performance.now() - gameStartTime) / 1000;
+    finishTime.textContent = `Total time: ${totalSeconds.toFixed(1)}s`;
     showScreen(finishScreen);
     playVictoryFanfare();
     burstConfetti(finishScreen, 90);
@@ -864,7 +1099,16 @@
     const dt = lastFrameTime ? (now - lastFrameTime)/1000 : 0;
     lastFrameTime = now;
 
-    const r = rounds[roundIndex];
+    if (transitioning){
+      rafId = requestAnimationFrame(gameLoop);
+      return;
+    }
+
+    timerPill.textContent = phase === 'challenge'
+      ? `${((now - gameStartTime)/1000).toFixed(1)}s`
+      : 'Warm-up';
+
+    const r = activeRounds()[roundIndex];
     const level = MODE === 'volume' ? readCalibratedLevel() : readPitchLevel(r.targetFreq);
 
     meterFill.style.width = level + '%';
@@ -905,6 +1149,7 @@
 
     if (!roundLocked){
       const inRange = level >= r.min && level <= r.max;
+      const hadProgress = heldTime > 0;
       if (inRange){
         heldTime = Math.min(holdDuration, heldTime + dt);
       } else {
@@ -912,6 +1157,17 @@
       }
       holdLabel.textContent = `Hold time: ${heldTime.toFixed(1)} / ${holdDuration.toFixed(1)} sec`;
       holdFill.style.width = (heldTime/holdDuration*100) + '%';
+
+      if (phase === 'warmup' && roundIndex === 0){
+        if (inRange && !wasInRange && !tutorialShown.hold){
+          showCoachmark(holdWrap, 'Great! Now stay inside until this bar fills all the way up!', 4000);
+          tutorialShown.hold = true;
+        } else if (!inRange && hadProgress && tutorialShown.hold && !tutorialShown.reset){
+          showCoachmark(holdWrap, 'Oops — leaving the zone resets your progress. Try to stay steady!', 4000);
+          tutorialShown.reset = true;
+        }
+      }
+      wasInRange = inRange;
 
       if (heldTime >= holdDuration){
         completeRound();
@@ -922,13 +1178,15 @@
   }
 
   // ---------- flow control ----------
-  async function startGame(){
-    errorBox.hidden = true;
-    startBtn.disabled = true;
+  const MIC_ERROR_MESSAGE = 'Could not access the microphone. Please allow microphone access in your browser, or open this page in Chrome/Edge. If opening the file directly (file://) still does not work, run a local server (for example: python3 -m http.server) and open the page via http://localhost instead.';
+
+  async function beginWarmup(){
+    rulesErrorBox.hidden = true;
+    beginWarmupBtn.disabled = true;
     try {
-      buildRounds();
       holdDuration = parseFloat(optHold.value) || 3;
       autoDelay = parseFloat(optDelay.value) || 2;
+      buildWarmupRounds();
 
       if (!audioCtx){
         await initMic();
@@ -937,30 +1195,42 @@
       }
 
       runReadyStep(() => {
+        phase = 'warmup';
+        transitioning = false;
         roundIndex = 0;
         gameRunning = true;
         lastFrameTime = 0;
-        startBtn.disabled = false;
+        wasInRange = false;
+        tutorialShown.zone = false;
+        tutorialShown.hold = false;
+        tutorialShown.reset = false;
+        beginWarmupBtn.disabled = false;
         showScreen(gameScreen);
         loadRound(0);
         rafId = requestAnimationFrame(gameLoop);
       });
     } catch (err){
       console.error(err);
-      errorBox.hidden = false;
-      errorBox.textContent = 'Could not access the microphone. Please allow microphone access in your browser, or open this page in Chrome/Edge. If opening the file directly (file://) still does not work, run a local server (for example: python3 -m http.server) and open the page via http://localhost instead.';
-      startBtn.disabled = false;
+      rulesErrorBox.hidden = false;
+      rulesErrorBox.textContent = MIC_ERROR_MESSAGE;
+      beginWarmupBtn.disabled = false;
     }
   }
 
   modeVolumeBtn.addEventListener('click', () => setMode('volume'));
   modePitchBtn.addEventListener('click', () => setMode('pitch'));
 
-  startBtn.addEventListener('click', startGame);
+  startBtn.addEventListener('click', () => {
+    errorBox.hidden = true;
+    showScreen(rulesScreen);
+  });
+
+  beginWarmupBtn.addEventListener('click', beginWarmup);
 
   playNoteBtn.addEventListener('click', () => {
-    if (!gameRunning || !rounds[roundIndex]) return;
-    playReferenceTone(rounds[roundIndex].targetFreq);
+    const r = activeRounds()[roundIndex];
+    if (!gameRunning || !r) return;
+    playReferenceTone(r.targetFreq);
   });
 
   skipBtn.addEventListener('click', () => {
@@ -972,10 +1242,11 @@
   endBtn.addEventListener('click', () => {
     gameRunning = false;
     if (rafId) cancelAnimationFrame(rafId);
+    hideCoachmark();
+    challengeStartOverlay.hidden = true;
     stopMic();
     audioCtx = null;
     showScreen(startScreen);
-    startBtn.disabled = false;
   });
 
   recalibrateBtn.addEventListener('click', () => {
@@ -995,7 +1266,6 @@
   });
 
   restartBtn.addEventListener('click', () => {
-    startBtn.disabled = false;
     showScreen(startScreen);
   });
 
